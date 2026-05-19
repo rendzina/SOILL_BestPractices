@@ -1,0 +1,75 @@
+# SOILL Catalogue of Best Practices (T4.4) — Git ignore rules
+# https://git-scm.com/docs/gitignore
+
+# -----------------------------------------------------------------------------
+# Environment and secrets
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Test and type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# -----------------------------------------------------------------------------
+# Project outputs
+# -----------------------------------------------------------------------------
+logs/
+*.log
+data/
+temporary/
+
+# -----------------------------------------------------------------------------
+# IDE and editor
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Cursor (local workspace state; keep shared rules if added later)
+.cursor/
+
+# -----------------------------------------------------------------------------
+# Operating system
+# -----------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini

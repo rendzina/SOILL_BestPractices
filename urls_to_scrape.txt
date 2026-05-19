@@ -1,0 +1,19 @@
+# URLs to scrape for SOILL Catalogue of Best Practices, T4.4
+# Format: URL,ProjectName
+# ProjectName is stored as project_name in MongoDB.
+#
+# Nested URL (e.g. /projects/gov4all): crawl only under that path on the host.
+# Domain-root URL (e.g. https://partner.eu): crawl the whole site on that host.
+# Re-scraping the same seed can duplicate articles in MongoDB; comment out
+# completed seeds when adding new projects. Re-index with build_faiss_index.py.
+#
+# Mission Soil Living Labs
+#https://www.metabolic.nl/projects/gov4all,GOV4ALL
+#https://www.icoshells.eu,iCOSHELLs
+https://lilas4soils.eu,LILAS4SOILS
+https://livingsoill.eu,LivingSoiLL
+https://soilcrates.eu,SOILCRATES
+https://groundwork-project.eu,GroundWork
+https://www.nemesis-soil.eu,Nemesis
+https://trails4soil.eu,TRAILS4SOIL
+https://ursoill.eu,URSOILL

@@ -1,0 +1,19 @@
+# Local MongoDB for development — all settings from project root .env
+# Usage (from repository root):
+#   docker compose -f mongodb_docker/docker-compose.yml --env-file .env up -d
+
+services:
+  mongodb:
+    image: ${MONGO_IMAGE}
+    container_name: ${MONGO_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "${MONGO_HOST}:${MONGO_PORT}:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+
+volumes:
+  mongo_data:
+    name: ${MONGO_VOLUME_NAME}

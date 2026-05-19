@@ -1,0 +1,29 @@
+/* SOILL Catalogue of Best Practices — welcome screen (chainlit.md) */
+
+img[src*="logo_dark.png"],
+img[src*="logo_light.png"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Chainlit often wraps markdown images in a rounded, muted container */
+div:has(> img[src*="logo_dark.png"]),
+div:has(> img[src*="logo_light.png"]),
+span:has(> img[src*="logo_dark.png"]),
+span:has(> img[src*="logo_light.png"]),
+a:has(> img[src*="logo_dark.png"]),
+a:has(> img[src*="logo_light.png"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Fallback: Tailwind-style utility wrappers around markdown images */
+[class*="bg-muted"]:has(img[src*="logo_dark.png"]),
+[class*="bg-muted"]:has(img[src*="logo_light.png"]),
+[class*="bg-card"]:has(img[src*="logo_dark.png"]),
+[class*="bg-card"]:has(img[src*="logo_light.png"]) {
+  background-color: transparent !important;
+  background-image: none !important;
+}

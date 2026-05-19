@@ -1,0 +1,17 @@
+# SOILL Catalogue of Best Practices (T4.4)
+# Licence: CC BY 4.0 — see LICENSE
+# Python 3.10–3.13 for Chainlit (app.py); 3.14 OK for chat_cli.py and scraping
+
+# Database and configuration
+pymongo>=4.6.0
+python-dotenv>=1.0.0
+
+# SOILL_scrape.py — web crawling and HTML parsing
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Chatbot — FAISS index and Chainlit UI
+chainlit==2.11.0
+faiss-cpu>=1.13.0
+mistralai>=1.2.0,<3
+numpy>=1.26.0
