@@ -1,4 +1,10 @@
-"""Derive visitor metadata from Chainlit session / WSGI environ (for logging)."""
+"""
+Derive client metadata from Chainlit session or WSGI environ (for conversation logging).
+
+Chainlit 2.x: use get_context().session — not context.get() (that API does not exist).
+visitor_fingerprint is SHA-256(client_ip|user_agent) for coarse analytics only;
+chat history is keyed by thread_id, not by fingerprint.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +29,7 @@ class ClientMetadata:
 
     @staticmethod
     def anonymous() -> ClientMetadata:
+        """Fallback when Chainlit context is unavailable (e.g. outside a handler)."""
         return ClientMetadata(
             thread_id='anonymous',
             session_id='anonymous',

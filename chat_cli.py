@@ -5,7 +5,9 @@ Prof. S. Hallett, Cranfield University
 19/05/2026
 ======================================
 
-Use when Chainlit is unavailable (e.g. Python 3.14). Same RAG as app.py.
+Use when Chainlit is unavailable (e.g. Python 3.14). Same RAG as app.py, including
+multi-turn history and follow-up retrieval expansion when CHAT_HISTORY_ENABLED=true.
+History is in-memory for the terminal session only (no Mongo reload).
 
 Usage:
     python chat_cli.py

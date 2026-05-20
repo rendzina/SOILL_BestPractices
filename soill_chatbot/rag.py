@@ -1,5 +1,11 @@
 """
-RAG: retrieve with FAISS, enrich from MongoDB, answer with Mistral chat.
+RAG: FAISS retrieval, MongoDB chunk text, Mistral chat completion.
+
+Multi-turn uses two mechanisms:
+  1. Chat history — prior Q&A pairs sent to the model (CHAT_HISTORY_*).
+  2. Retrieval expansion — on follow-up questions, prior user questions are
+     prepended to the FAISS embedding query (CHAT_HISTORY_EXPAND_RETRIEVAL).
+     Without (2), vague follow-ups retrieve wrong chunks even when history is sent.
 """
 
 from __future__ import annotations

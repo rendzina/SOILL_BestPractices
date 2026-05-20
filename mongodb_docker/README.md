@@ -123,6 +123,8 @@ docker compose -f mongodb_docker/docker-compose.yml --env-file .env down -v
 | `MONGODB_CHUNKS_COLLECTION` | `build_faiss_index.py` | Embedded chunks for RAG |
 | `MONGODB_CONVERSATIONS_COLLECTION` | Chatbot (if `LOG_CONVERSATIONS=true`) | Optional interaction log |
 
+When using **cloud MongoDB** (Atlas) via `MONGO_URI` in `.env`, you do not need local Docker; chat logs are still written to `MONGODB_CONVERSATIONS_COLLECTION` in `MONGO_DB`.
+
 FAISS files live under `data/faiss/` (gitignored), not in MongoDB.
 
 ## See also

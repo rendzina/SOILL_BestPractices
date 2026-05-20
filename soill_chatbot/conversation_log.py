@@ -1,4 +1,9 @@
-"""Log chat questions and answers to MongoDB (with optional client metadata)."""
+"""
+Log chat questions and answers to MongoDB (with optional client metadata).
+
+Uses thread_id from Chainlit for per-conversation history reload on chat start.
+Skips reload when thread_id is 'anonymous'. Logs INFO on success, ERROR on failure.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +34,12 @@ def _ensure_indexes() -> None:
 
 
 def fetch_recent_turns(thread_id: str, limit: Optional[int] = None) -> List[ChatTurn]:
-    """Load the latest completed Q&A turns for a Chainlit thread (newest last)."""
+    """
+    Load the latest completed Q&A turns for a Chainlit thread (newest last).
+
+    Called on chat start when LOG_CONVERSATIONS is enabled. Skips 'anonymous'
+    thread_id so failed metadata reads do not merge all users' history.
+    """
     if not cfg.LOG_CONVERSATIONS or not thread_id or thread_id == 'anonymous':
         return []
     turn_limit = limit if limit is not None else cfg.CHAT_HISTORY_TURNS

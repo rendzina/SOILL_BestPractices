@@ -107,6 +107,8 @@ Edit `.env` — set `MONGO_DB`, `MISTRAL_API_KEY`, and other values. **Do not co
 | `MISTRAL_CHAT_MODEL` | Chat model |
 | `MISTRAL_CHAT_MODEL_FALLBACK` | Optional model if primary hits rate limits (429) |
 | `RAG_TOP_K` | Chunks retrieved per question |
+| `CHAT_HISTORY_ENABLED` | Multi-turn: send prior Q&A pairs to the model |
+| `CHAT_HISTORY_EXPAND_RETRIEVAL` | Prepend prior questions to FAISS search on follow-ups |
 
 See [`.env.example`](.env.example) for the full list (including multi-turn and logging).
 
@@ -215,8 +217,11 @@ Each chat has a **Chainlit `thread_id`**. While the tab/session is open, up to `
 | `CHAT_HISTORY_TURNS` | `3` | Number of prior Q&A pairs to include (not unlimited memory) |
 | `CHAT_HISTORY_MAX_ANSWER_CHARS` | `1500` | Truncate long answers in history |
 | `CHAT_HISTORY_EXPAND_RETRIEVAL` | `true` | Prepend prior questions to FAISS search on follow-ups |
+| `CHAT_HISTORY_RETRIEVAL_MAX_CHARS` | `2000` | Max characters in the expanded FAISS search query |
 | `LOG_CONVERSATIONS` | `true` | Store each turn in MongoDB |
 | `LOG_CLIENT_METADATA` | `true` | Log `client_ip` and `user_agent` (see privacy note below) |
+
+**Example test (same chat thread):** ask `describe project cafamore`, then `which partners does that involve?` — both answers should stay on CAFAMORE with the same `thread_id` in MongoDB.
 
 **Reloading history after refresh:** MongoDB reload on chat start only runs when **both** `CHAT_HISTORY_ENABLED=true` **and** `LOG_CONVERSATIONS=true`, and only for the **same `thread_id`**. A **new chat** or new browser session usually gets a new `thread_id`, so yesterday’s turns are not loaded.
 
@@ -236,6 +241,15 @@ Multi-turn works for the **current terminal session** only (no Mongo reload betw
 Check the Chainlit terminal for `Failed to log conversation to MongoDB` if rows do not appear in Atlas (permissions, network access, or wrong database name).
 
 For **follow-up** questions (e.g. “which partners does that involve?”), FAISS search uses prior user questions plus the new message when `CHAT_HISTORY_EXPAND_RETRIEVAL=true`. Otherwise retrieval uses only the latest question; chat history is still sent to the model for dialogue context.
+
+### Troubleshooting multi-turn and logging
+
+| Symptom | Likely cause | What to do |
+|---------|----------------|------------|
+| `thread_id` / `session_id` = `anonymous` in MongoDB | Old Chainlit metadata bug or context unavailable | Use current code (`get_context().session`), restart Chainlit |
+| Follow-up answers wrong project | FAISS searched only the vague follow-up | Set `CHAT_HISTORY_EXPAND_RETRIEVAL=true` in `.env` |
+| No rows in Atlas | Wrong DB, logging off, or insert error | Check `MONGO_DB`, `LOG_CONVERSATIONS`; terminal for `Failed to log conversation` or `Logged conversation to…` |
+| History lost after refresh | New Chainlit `thread_id` | Expected; only same thread reloads from Mongo when `LOG_CONVERSATIONS=true` |
 
 **Privacy:** If you deploy for multiple users, document IP/User-Agent logging in your privacy notice. Set `LOG_CLIENT_METADATA=false` to store only hashed `visitor_fingerprint` and thread ids.
 

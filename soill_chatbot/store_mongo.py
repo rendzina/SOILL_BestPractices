@@ -1,4 +1,9 @@
-"""MongoDB access for scraped articles and RAG chunks."""
+"""
+MongoDB access for scraped articles, RAG chunks, and conversation logs.
+
+get_client() reconnects when MONGO_URI changes so editing .env does not require
+restarting long-running processes (e.g. Chainlit) to pick up a new database host.
+"""
 
 from __future__ import annotations
 

@@ -5,7 +5,10 @@ Prof. S. Hallett, Cranfield University
 ======================================
 
 Retrieval from MongoDB + FAISS over scraped articles; answers via Mistral chat API.
-Supports multi-turn follow-ups per browser session (see CHAT_HISTORY_* in .env).
+
+Multi-turn: prior Q&A in the model prompt; follow-up questions expand the FAISS
+search query (see CHAT_HISTORY_* in .env). Refreshes client metadata each message
+(get_context().session). History in user_session and optionally MongoDB (thread_id).
 
 Usage:
     chainlit run app.py
