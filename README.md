@@ -21,7 +21,7 @@ Toolkit for the [SOILL](https://www.soill2030.eu/) project (Support Structure fo
 flowchart TB
     subgraph setup [One-time setup]
         A[Clone repository] --> B["Configure .env<br/>(from .env.example)"]
-        B --> C["Start MongoDB<br/>docker compose … up -d"]
+        B --> C["MongoDB ready<br/>local Docker or cloud URI"]
         C --> D["Python venv + pip install<br/>requirements.txt"]
         D --> E["Create database<br/>Create_SOILL_Best_Practices_database.py"]
     end
@@ -69,6 +69,8 @@ flowchart TB
 | `public/` | Logos, favicon, Chainlit welcome CSS |
 | `.chainlit/` | Chainlit UI configuration |
 | `webscraping-important-considerations.md` | Ethics and crawling guidelines |
+| `chainlit.md` / `chainlit_en-GB.md` | Chainlit welcome screen copy |
+| `LICENSE` | CC BY 4.0 licence text |
 
 Generated locally (gitignored): `.env`, `.venv/`, `logs/`, `data/faiss/`.
 
@@ -76,7 +78,7 @@ Generated locally (gitignored): `.env`, `.venv/`, `logs/`, `data/faiss/`.
 
 - Python **3.10–3.13** for Chainlit (`app.py`); **3.14** is fine for scraping and `chat_cli.py`
 - pip
-- Docker (for local MongoDB)
+- **MongoDB** — local [Docker](mongodb_docker/README.md) **or** a cloud host (e.g. [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)) via `MONGO_URI`
 - [Mistral API](https://console.mistral.ai/) key for embeddings and chat
 
 ## Quick start
@@ -97,24 +99,44 @@ Edit `.env` — set `MONGO_DB`, `MISTRAL_API_KEY`, and other values. **Do not co
 | `MONGO_DB` | Database name (e.g. `SOILL_catalogue`) |
 | `MONGO_COLLECTION` | Scraped articles (e.g. `webscrape`) |
 | `MONGODB_CHUNKS_COLLECTION` | RAG chunks with embeddings |
+| `MONGODB_CONVERSATIONS_COLLECTION` | Chat Q&A log (e.g. `soill_conversations`) |
 | `MIN_DELAY` | Minimum seconds between HTTP requests |
 | `REQUEST_TIMEOUT` | HTTP timeout (seconds) |
 | `MAX_PAGES_PER_SITE` | Page cap per seed (`0` = no cap) |
 | `MISTRAL_API_KEY` | Mistral API key |
-| `MISTRAL_CHAT_MODEL` | Chat model (see `.env.example` for fallbacks) |
+| `MISTRAL_CHAT_MODEL` | Chat model |
+| `MISTRAL_CHAT_MODEL_FALLBACK` | Optional model if primary hits rate limits (429) |
 | `RAG_TOP_K` | Chunks retrieved per question |
 
-See [`.env.example`](.env.example) for the full list.
+See [`.env.example`](.env.example) for the full list (including multi-turn and logging).
 
-### 2. MongoDB (Docker)
+### 2. MongoDB
 
-From the repository root:
+Use **either** local Docker **or** a cloud connection string in `.env` — all Python scripts use `MONGO_URI` only.
+
+**Option A — local Docker** (from the repository root):
 
 ```bash
 docker compose -f mongodb_docker/docker-compose.yml --env-file .env up -d
 ```
 
+Set `MONGO_URI=mongodb://127.0.0.1:27017/` (host/port must match `MONGO_HOST` / `MONGO_PORT`).  
 Details: [mongodb_docker/README.md](mongodb_docker/README.md).
+
+**Option B — cloud (e.g. MongoDB Atlas)**
+
+1. Create a cluster and database user with **read/write** on `MONGO_DB`.
+2. Allow your IP under **Network Access** (or use a suitable VPC/peering rule).
+3. Set `MONGO_URI` to the Atlas connection string, for example:
+
+   ```text
+   MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/
+   ```
+
+4. After `pip install -r requirements.txt`, ensure **`dnspython`** is installed (included in `requirements.txt` for `mongodb+srv://`).
+
+Restart Chainlit after changing `MONGO_URI`. Conversation logs are stored in  
+`MONGO_DB` / `MONGODB_CONVERSATIONS_COLLECTION` (not in Chainlit’s own UI).
 
 ### 3. Python environment
 
@@ -175,26 +197,42 @@ If you see `anyio.NoEventLoopError`, use Python 3.13 for the venv.
 python chat_cli.py
 ```
 
-Type `quit` to exit. Restart Chainlit after rebuilding the index.
+Type `quit`, `exit`, or `q` to exit. The terminal CLI also keeps multi-turn history for the current run when `CHAT_HISTORY_ENABLED=true`.
+
+Restart Chainlit after rebuilding the index or changing `MONGO_URI`.
 
 ## Multi-turn chat and conversation logging
 
-Each browser tab gets a **Chainlit thread id** (`thread_id`). The assistant keeps the last few question–answer pairs in that thread and sends them to Mistral for follow-ups (e.g. “tell me more about that”).
+The assistant can use the **last few question–answer pairs** for follow-ups (e.g. “tell me more about that”). This is normal for RAG systems: limited history controls cost, keeps retrieval focused, and reduces privacy risk.
+
+### Chainlit (browser)
+
+Each chat has a **Chainlit `thread_id`**. While the tab/session is open, up to `CHAT_HISTORY_TURNS` prior pairs are sent to Mistral with each new question.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CHAT_HISTORY_ENABLED` | `true` | Include recent turns in the model prompt |
-| `CHAT_HISTORY_TURNS` | `3` | Number of prior Q&A pairs to include |
+| `CHAT_HISTORY_TURNS` | `3` | Number of prior Q&A pairs to include (not unlimited memory) |
 | `CHAT_HISTORY_MAX_ANSWER_CHARS` | `1500` | Truncate long answers in history |
 | `LOG_CONVERSATIONS` | `true` | Store each turn in MongoDB |
 | `LOG_CLIENT_METADATA` | `true` | Log `client_ip` and `user_agent` (see privacy note below) |
 
-Logged fields include:
+**Reloading history after refresh:** MongoDB reload on chat start only runs when **both** `CHAT_HISTORY_ENABLED=true` **and** `LOG_CONVERSATIONS=true`, and only for the **same `thread_id`**. A **new chat** or new browser session usually gets a new `thread_id`, so yesterday’s turns are not loaded.
 
-- `thread_id` — Chainlit conversation thread (used to reload history after reconnect)
-- `session_id` — Chainlit session cookie id
-- `visitor_fingerprint` — SHA-256 hash of IP + User-Agent (coarse visitor grouping)
+**Not remembered across days by default:** History is capped at the last **N** turns per thread, not “everything this user ever asked”. `visitor_fingerprint` (SHA-256 of IP + User-Agent) is for **logging and analytics**, not for loading chat history.
+
+### Terminal (`chat_cli.py`)
+
+Multi-turn works for the **current terminal session** only (no Mongo reload between runs unless you extend the code).
+
+### Logging fields (MongoDB)
+
+- `thread_id` — Chainlit conversation thread
+- `session_id` — Chainlit session id
+- `visitor_fingerprint` — SHA-256 hash of `client_ip|user_agent`
 - `client_ip`, `user_agent` — only if `LOG_CLIENT_METADATA=true`
+
+Check the Chainlit terminal for `Failed to log conversation to MongoDB` if rows do not appear in Atlas (permissions, network access, or wrong database name).
 
 Retrieval (FAISS) still uses **only the latest question** for embedding search; history is for dialogue context, not for finding new chunks.
 
@@ -265,7 +303,7 @@ tail -f logs/SOILL_scrape_*.log
 
 ## Dependencies
 
-See `requirements.txt`. Main packages: `pymongo`, `requests`, `beautifulsoup4`, `chainlit`, `faiss-cpu`, `mistralai`, `numpy`.
+See `requirements.txt`. Main packages: `pymongo`, `dnspython` (for `mongodb+srv://`), `requests`, `beautifulsoup4`, `chainlit`, `faiss-cpu`, `mistralai`, `numpy`.
 
 ## Licence
 

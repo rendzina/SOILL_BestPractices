@@ -1,5 +1,7 @@
 # Local MongoDB (Docker) for SOILL Best Practices
 
+**Alternative:** you can use cloud MongoDB (e.g. Atlas) instead of Docker — set `MONGO_URI` in `.env` and skip this folder. See the [main README](../README.md) § MongoDB.
+
 Docker Compose starts MongoDB using **only values from the project root [`.env`](../.env)**. `docker-compose.yml` contains no host names, ports, or container names (safe to commit to Git).
 
 **Setup:** copy [`.env.example`](../.env.example) to `.env` in the repository root and edit your local values. **Do not commit `.env`.**
