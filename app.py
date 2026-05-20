@@ -5,6 +5,7 @@ Prof. S. Hallett, Cranfield University
 ======================================
 
 Retrieval from MongoDB + FAISS over scraped articles; answers via Mistral chat API.
+Supports multi-turn follow-ups per browser session (see CHAT_HISTORY_* in .env).
 
 Usage:
     chainlit run app.py
@@ -20,10 +21,13 @@ import uuid
 import chainlit as cl
 
 import config as cfg
-from soill_chatbot.conversation_log import log_interaction
+from soill_chatbot.chat_history import ChatTurn, append_turn, trim_history
+from soill_chatbot.conversation_log import fetch_recent_turns, log_interaction
 from soill_chatbot.rag import SourceRef, answer_question
+from soill_chatbot.user_identity import metadata_from_chainlit
 
 _SESSION_SOURCES_PREFIX = 'rag_sources_'
+_SESSION_HISTORY_KEY = 'chat_history'
 
 
 def _sources_cited_in_answer(answer: str, sources: list[SourceRef]) -> list[SourceRef]:
@@ -42,8 +46,29 @@ def _sources_cited_in_answer(answer: str, sources: list[SourceRef]) -> list[Sour
     return [by_label[i] for i in sorted(cited) if i in by_label]
 
 
+def _get_session_history() -> list[ChatTurn]:
+    raw = cl.user_session.get(_SESSION_HISTORY_KEY)
+    if not raw:
+        return []
+    return [ChatTurn(question=item['question'], answer=item['answer']) for item in raw]
+
+
+def _set_session_history(turns: list[ChatTurn]) -> None:
+    cl.user_session.set(
+        _SESSION_HISTORY_KEY,
+        [{'question': turn.question, 'answer': turn.answer} for turn in turns],
+    )
+
+
 @cl.on_chat_start
 async def on_chat_start() -> None:
+    client_meta = metadata_from_chainlit()
+    cl.user_session.set('client_metadata', client_meta)
+
+    if cfg.CHAT_HISTORY_ENABLED and cfg.LOG_CONVERSATIONS:
+        prior = fetch_recent_turns(client_meta.thread_id)
+        _set_session_history(trim_history(prior))
+
     await cl.Message(
         content=(
             'I am the **SOILL Catalogue** assistant. Ask questions about best practices for soil health, '
@@ -94,14 +119,28 @@ async def on_message(message: cl.Message) -> None:
     text = (message.content or '').strip()
     if not text:
         return
+
+    client_meta = cl.user_session.get('client_metadata') or metadata_from_chainlit()
+    history = _get_session_history() if cfg.CHAT_HISTORY_ENABLED else []
+
     try:
-        result = answer_question(text, top_k=cfg.RAG_TOP_K)
+        result = answer_question(text, top_k=cfg.RAG_TOP_K, history=history)
     except (FileNotFoundError, RuntimeError) as exc:
-        log_interaction(question=text, answer=None, error=str(exc))
+        log_interaction(
+            question=text,
+            answer=None,
+            error=str(exc),
+            client=client_meta,
+        )
         await cl.Message(author='SOILL', content=str(exc)).send()
         return
     except Exception as exc:
-        log_interaction(question=text, answer=None, error=str(exc))
+        log_interaction(
+            question=text,
+            answer=None,
+            error=str(exc),
+            client=client_meta,
+        )
         await cl.Message(
             author='SOILL',
             content=f'An unexpected error occurred: {exc}',
@@ -128,8 +167,14 @@ async def on_message(message: cl.Message) -> None:
         content=result.answer,
         actions=actions,
     ).send()
+
+    if cfg.CHAT_HISTORY_ENABLED and result.answer:
+        updated = append_turn(history, text, result.answer)
+        _set_session_history(updated)
+
     log_interaction(
         question=text,
         answer=result.answer,
         cited_sources_count=len(cited),
+        client=client_meta,
     )

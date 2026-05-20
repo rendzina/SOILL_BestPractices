@@ -177,6 +177,29 @@ python chat_cli.py
 
 Type `quit` to exit. Restart Chainlit after rebuilding the index.
 
+## Multi-turn chat and conversation logging
+
+Each browser tab gets a **Chainlit thread id** (`thread_id`). The assistant keeps the last few question–answer pairs in that thread and sends them to Mistral for follow-ups (e.g. “tell me more about that”).
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CHAT_HISTORY_ENABLED` | `true` | Include recent turns in the model prompt |
+| `CHAT_HISTORY_TURNS` | `3` | Number of prior Q&A pairs to include |
+| `CHAT_HISTORY_MAX_ANSWER_CHARS` | `1500` | Truncate long answers in history |
+| `LOG_CONVERSATIONS` | `true` | Store each turn in MongoDB |
+| `LOG_CLIENT_METADATA` | `true` | Log `client_ip` and `user_agent` (see privacy note below) |
+
+Logged fields include:
+
+- `thread_id` — Chainlit conversation thread (used to reload history after reconnect)
+- `session_id` — Chainlit session cookie id
+- `visitor_fingerprint` — SHA-256 hash of IP + User-Agent (coarse visitor grouping)
+- `client_ip`, `user_agent` — only if `LOG_CLIENT_METADATA=true`
+
+Retrieval (FAISS) still uses **only the latest question** for embedding search; history is for dialogue context, not for finding new chunks.
+
+**Privacy:** If you deploy for multiple users, document IP/User-Agent logging in your privacy notice. Set `LOG_CLIENT_METADATA=false` to store only hashed `visitor_fingerprint` and thread ids.
+
 ## Adding projects without wiping the database
 
 1. Add new lines to `urls_to_scrape.txt` (comment out seeds already scraped if you only want new sites).

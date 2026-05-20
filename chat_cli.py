@@ -17,8 +17,10 @@ import re
 import sys
 
 import config as cfg
+from soill_chatbot.chat_history import ChatTurn, append_turn
 from soill_chatbot.conversation_log import log_interaction
 from soill_chatbot.rag import SourceRef, answer_question
+from soill_chatbot.user_identity import metadata_for_cli
 
 
 def _sources_cited_in_answer(answer: str, sources: list[SourceRef]) -> list[SourceRef]:
@@ -55,6 +57,9 @@ def main() -> None:
     print('SOILL Catalogue assistant (terminal)')
     print('Ask questions about indexed articles. Type quit or exit to stop.\n')
 
+    client_meta = metadata_for_cli()
+    history: list[ChatTurn] = []
+
     while True:
         try:
             question = input('You: ').strip()
@@ -68,20 +73,32 @@ def main() -> None:
             break
 
         try:
-            result = answer_question(question, top_k=cfg.RAG_TOP_K)
+            result = answer_question(
+                question,
+                top_k=cfg.RAG_TOP_K,
+                history=history if cfg.CHAT_HISTORY_ENABLED else None,
+            )
         except (FileNotFoundError, RuntimeError) as exc:
             print(f'\nError: {exc}\n')
-            log_interaction(question=question, answer=None, error=str(exc))
+            log_interaction(
+                question=question,
+                answer=None,
+                error=str(exc),
+                client=client_meta,
+            )
             continue
 
         cited = _sources_cited_in_answer(result.answer, result.sources)
         print(f'\nSOILL: {result.answer}')
         _print_sources(cited)
         print()
+        if cfg.CHAT_HISTORY_ENABLED and result.answer:
+            history = append_turn(history, question, result.answer)
         log_interaction(
             question=question,
             answer=result.answer,
             cited_sources_count=len(cited),
+            client=client_meta,
         )
 
 

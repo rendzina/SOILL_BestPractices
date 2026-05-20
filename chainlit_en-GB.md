@@ -15,7 +15,14 @@ We hope you find the Best Practices Chatbot a useful resource!
 
 Ask a question and the tool will return contextual answers with references to the indexed source documents.
 
-The chatbot uses [Mistral AI](https://mistral.ai/) to help you find your answers. Mistral is one of the AI platforms preferred for use in European funded work.
+## What you can ask me
+Here are some of the main themes I know about:
 
+- Living Labs and their activities
+- Projects and their funders
+- Data protection and privacy
+- Institutions involved
+
+The chatbot uses [Mistral AI](https://mistral.ai/) to help you find your answers. Mistral is one of the AI platforms preferred for use in European funded work.
 
 If you have any issues or want to get in touch, please email SOILL@cranfield.ac.uk

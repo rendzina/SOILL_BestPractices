@@ -84,6 +84,12 @@ RAG_MMR_FETCH_MULT = min(8, max(2, _env_int('RAG_MMR_FETCH_MULT', 3)))
 RAG_MMR_FETCH_CAP = min(64, max(12, _env_int('RAG_MMR_FETCH_CAP', 40)))
 
 LOG_CONVERSATIONS = _env_bool('LOG_CONVERSATIONS', True)
+LOG_CLIENT_METADATA = _env_bool('LOG_CLIENT_METADATA', True)
+
+# Multi-turn chat (Chainlit / CLI)
+CHAT_HISTORY_ENABLED = _env_bool('CHAT_HISTORY_ENABLED', True)
+CHAT_HISTORY_TURNS = max(0, _env_int('CHAT_HISTORY_TURNS', 3))
+CHAT_HISTORY_MAX_ANSWER_CHARS = max(200, _env_int('CHAT_HISTORY_MAX_ANSWER_CHARS', 1500))
 
 # Chatbot — chunking (word-based, overlapping)
 CHUNK_SIZE_WORDS = _env_int('CHUNK_SIZE_WORDS', 500)

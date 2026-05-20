@@ -9,11 +9,18 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Union
 
+from soill_chatbot.chat_history import ChatTurn
+
 import numpy as np
 
 import config as cfg
 from soill_chatbot.mistral_chat import complete_chat
-from soill_chatbot.mistral_client import Mistral, SystemMessage, UserMessage
+from soill_chatbot.mistral_client import (
+    AssistantMessage,
+    Mistral,
+    SystemMessage,
+    UserMessage,
+)
 from soill_chatbot import embeddings, store_faiss, store_mongo
 
 SYSTEM_RAG = (
@@ -24,6 +31,8 @@ SYSTEM_RAG = (
     'If the answer is not in the context, say you do not have enough information. '
     'Cite only context you rely on: use markers such as [1] or [2, 3] next to supported sentences. '
     'Where you cite, mention the project name and article title where helpful. '
+    'Earlier user and assistant turns may be included for follow-up questions only; '
+    'ground every factual claim in the numbered context excerpts, not in chat history alone. '
     'Use UK English spelling in your answers.'
 )
 
@@ -197,9 +206,23 @@ def retrieve(
     return sources, '\n\n'.join(context_lines)
 
 
+def _build_chat_messages(
+    user_block: str,
+    history: Optional[Sequence[ChatTurn]],
+) -> list:
+    messages: list = [SystemMessage(content=SYSTEM_RAG)]
+    if history:
+        for turn in history:
+            messages.append(UserMessage(content=turn.question))
+            messages.append(AssistantMessage(content=turn.answer))
+    messages.append(UserMessage(content=user_block))
+    return messages
+
+
 def answer_question(
     user_message: str,
     top_k: Optional[int] = None,
+    history: Optional[Sequence[ChatTurn]] = None,
 ) -> RAGResult:
     k = int(top_k or cfg.RAG_TOP_K)
     client = embeddings.get_client()
@@ -217,10 +240,7 @@ def answer_question(
     user_block = f'Question: {user_message}\n\nContext:\n{context_block}'
     chat = complete_chat(
         client,
-        [
-            SystemMessage(content=SYSTEM_RAG),
-            UserMessage(content=user_block),
-        ],
+        _build_chat_messages(user_block, history),
     )
     if not chat or not chat.choices:
         return RAGResult(answer='No response from the model.', sources=sources, top_k=k)

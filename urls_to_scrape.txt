@@ -9,11 +9,52 @@
 #
 # Mission Soil Living Labs
 #https://www.metabolic.nl/projects/gov4all,GOV4ALL
+#https://gov4all.eu,GOV4ALL
 #https://www.icoshells.eu,iCOSHELLs
-https://lilas4soils.eu,LILAS4SOILS
-https://livingsoill.eu,LivingSoiLL
-https://soilcrates.eu,SOILCRATES
-https://groundwork-project.eu,GroundWork
-https://www.nemesis-soil.eu,Nemesis
-https://trails4soil.eu,TRAILS4SOIL
-https://ursoill.eu,URSOILL
+#https://lilas4soils.eu,LILAS4SOILS
+#https://livingsoill.eu,LivingSoiLL
+#https://soilcrates.eu,SOILCRATES
+#https://groundwork-project.eu,GroundWork
+#https://www.nemesis-soil.eu,Nemesis
+#https://trails4soil.eu,TRAILS4SOIL
+#https://ursoill.eu,URSOILL
+
+# Lighthouses (included in above)
+#https://livingsoill.eu/lighthouses,LivingSoiLL lighthouses
+#https://soilcrates.eu/lighthouses,SOILCRATES lighthouses
+#https://groundwork-project.eu/lighthouses,GroundWork lighthouses
+#https://trails4soil.eu/lighthouses,TRAILS4SOIL lighthouses
+
+# Other projects with official websites:
+#https://presoil.eu
+#https://agroserv.eu
+#https://elaborator.eu
+#https://spongeworks.eu
+#https://path4med.eu
+#https://seacure-project.eu
+#https://evolve2care.eu
+#https://humus-project.eu
+#https://nbsoil.eu
+#https://nati00ns.eu
+#https://aragorn-project.eu
+#https://islandr-project.eu
+#https://edaphos.eu
+#https://deep-horizon.eu
+#https://sus-soil.eu
+#https://soilwise.eu
+#https://terrasafe.eu
+#https://monalisa-project.eu
+#https://forpeat.eu
+#https://bioservises.eu
+#https://sob4es.eu
+#https://ogcr.eu
+#https://cafamore.eu
+#https://nitroscope.eu
+ 
+# Projects WITHOUT an official website yet are:
+#https://cordis.europa.eu/project/id/101132349,AGROECOLOGY Partnership
+#https://cordis.europa.eu/project/id/101112869,ECHO
+#https://cordis.europa.eu/project/id/101218994,SOILRES
+#https://cordis.europa.eu/project/id/101218951,MultiSoil
+#https://cordis.europa.eu/project/id/101112707,LOESS
+ 
