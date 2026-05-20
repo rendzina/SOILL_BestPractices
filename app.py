@@ -24,7 +24,10 @@ import config as cfg
 from soill_chatbot.chat_history import ChatTurn, append_turn, trim_history
 from soill_chatbot.conversation_log import fetch_recent_turns, log_interaction
 from soill_chatbot.rag import SourceRef, answer_question
-from soill_chatbot.user_identity import metadata_from_chainlit
+from soill_chatbot.user_identity import (
+    metadata_from_chainlit,
+    metadata_to_dict,
+)
 
 _SESSION_SOURCES_PREFIX = 'rag_sources_'
 _SESSION_HISTORY_KEY = 'chat_history'
@@ -63,7 +66,7 @@ def _set_session_history(turns: list[ChatTurn]) -> None:
 @cl.on_chat_start
 async def on_chat_start() -> None:
     client_meta = metadata_from_chainlit()
-    cl.user_session.set('client_metadata', client_meta)
+    cl.user_session.set('client_metadata', metadata_to_dict(client_meta))
 
     if cfg.CHAT_HISTORY_ENABLED and cfg.LOG_CONVERSATIONS:
         prior = fetch_recent_turns(client_meta.thread_id)
@@ -120,7 +123,8 @@ async def on_message(message: cl.Message) -> None:
     if not text:
         return
 
-    client_meta = cl.user_session.get('client_metadata') or metadata_from_chainlit()
+    client_meta = metadata_from_chainlit()
+    cl.user_session.set('client_metadata', metadata_to_dict(client_meta))
     history = _get_session_history() if cfg.CHAT_HISTORY_ENABLED else []
 
     try:

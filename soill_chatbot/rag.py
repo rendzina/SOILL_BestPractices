@@ -33,9 +33,15 @@ SYSTEM_RAG = (
     'Cite only context you rely on: use markers such as [1] or [2, 3] next to supported sentences. '
     'Where you cite, mention the project name, source website and article title where helpful. '
     'Earlier user and assistant turns may be included for follow-up questions only; '
-    'ground every factual claim in the numbered context excerpts, not in chat history alone. '
+    'interpret pronouns such as "that" or "those" from the prior turn when answering. '
+    'Ground every factual claim in the numbered context excerpts, not in chat history alone. '
     'Use UK English spelling in your answers.'
 )
+
+_FOLLOWUP_HINTS = frozenset({
+    'that', 'those', 'this', 'these', 'them', 'they', 'it', 'its',
+    'above', 'mentioned', 'same', 'involve', 'involves',
+})
 
 
 @dataclass
@@ -120,6 +126,43 @@ def _assistant_content_to_str(content: Union[str, list, None]) -> str:
         if text:
             parts.append(text)
     return ''.join(parts)
+
+
+def _is_follow_up_question(question: str) -> bool:
+    """True when the question likely refers to the previous turn (e.g. 'that project')."""
+    tokens = {token.strip('.,?!') for token in question.lower().split()}
+    if tokens & _FOLLOWUP_HINTS:
+        return True
+    return len(question.split()) < 10
+
+
+def _retrieval_query(
+    user_message: str,
+    history: Optional[Sequence[ChatTurn]],
+) -> str:
+    """
+    Build the text embedded for FAISS search.
+
+    Follow-ups such as 'which partners does that involve?' retrieve poorly on their
+    own; prepend prior user questions so search stays on the same project/topic.
+    """
+    if not cfg.CHAT_HISTORY_ENABLED or not cfg.CHAT_HISTORY_EXPAND_RETRIEVAL:
+        return user_message
+    if not history:
+        return user_message
+
+    prior_questions = [turn.question.strip() for turn in history if turn.question.strip()]
+    if not prior_questions:
+        return user_message
+
+    if not _is_follow_up_question(user_message):
+        return user_message
+
+    combined = ' '.join(prior_questions + [user_message.strip()])
+    max_len = cfg.CHAT_HISTORY_RETRIEVAL_MAX_CHARS
+    if len(combined) > max_len:
+        combined = combined[-max_len:]
+    return combined
 
 
 def retrieve(
@@ -227,7 +270,8 @@ def answer_question(
 ) -> RAGResult:
     k = int(top_k or cfg.RAG_TOP_K)
     client = embeddings.get_client()
-    sources, context_block = retrieve(client, user_message, k)
+    search_query = _retrieval_query(user_message, history)
+    sources, context_block = retrieve(client, search_query, k)
     if not context_block:
         return RAGResult(
             answer=(

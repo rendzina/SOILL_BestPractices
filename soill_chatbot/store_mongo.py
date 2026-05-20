@@ -13,12 +13,16 @@ from pymongo.database import Database
 import config as cfg
 
 _client: Optional[MongoClient] = None
+_client_uri: Optional[str] = None
 
 
 def get_client() -> MongoClient:
-    global _client
-    if _client is None:
-        _client = MongoClient(cfg.MONGO_URI, serverSelectionTimeoutMS=8000)
+    """Return a MongoClient; reconnect if MONGO_URI changed (e.g. after editing .env)."""
+    global _client, _client_uri
+    uri = cfg.MONGO_URI
+    if _client is None or _client_uri != uri:
+        _client = MongoClient(uri, serverSelectionTimeoutMS=8000)
+        _client_uri = uri
     return _client
 
 

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
-from typing import Any, Optional
+import logging
+from dataclasses import asdict, dataclass
+from typing import Any, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -74,22 +77,49 @@ def metadata_from_environ(
 def metadata_from_chainlit() -> ClientMetadata:
     """Read client metadata from the active Chainlit request context."""
     try:
-        from chainlit.context import context
+        from chainlit.context import get_context
 
-        ctx = context.get()
-        session = ctx.session
-        thread_id = str(getattr(session, 'thread_id', '') or getattr(session, 'id', ''))
-        session_id = str(getattr(session, 'id', '') or thread_id)
-        environ = getattr(session, 'environ', None)
-        client_type = str(getattr(session, 'client_type', 'webapp') or 'webapp')
+        session = get_context().session
+        thread_id = str(session.thread_id or session.id)
+        session_id = str(session.id or thread_id)
+        environ = session.environ
+        client_type = str(session.client_type or 'webapp')
         return metadata_from_environ(
             thread_id=thread_id,
             session_id=session_id,
             environ=environ if isinstance(environ, dict) else None,
             client_type=client_type,
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning('Could not read Chainlit session metadata: %s', exc)
         return ClientMetadata.anonymous()
+
+
+def metadata_to_dict(meta: ClientMetadata) -> dict[str, str]:
+    """Serialise for Chainlit user_session (JSON-friendly)."""
+    return asdict(meta)
+
+
+def coerce_client_metadata(
+    value: Union[ClientMetadata, dict[str, Any], None],
+) -> ClientMetadata:
+    """Normalise metadata from user_session or logging callers."""
+    if value is None:
+        return ClientMetadata.anonymous()
+    if isinstance(value, ClientMetadata):
+        return value
+    if isinstance(value, dict):
+        return ClientMetadata(
+            thread_id=str(value.get('thread_id') or value.get('session_id') or 'anonymous'),
+            session_id=str(value.get('session_id') or value.get('thread_id') or 'anonymous'),
+            visitor_fingerprint=str(
+                value.get('visitor_fingerprint') or _hash_parts('unknown', 'unknown')
+            ),
+            client_ip=str(value.get('client_ip') or ''),
+            user_agent=str(value.get('user_agent') or ''),
+            client_type=str(value.get('client_type') or 'webapp'),
+        )
+    return ClientMetadata.anonymous()
 
 
 def metadata_for_cli() -> ClientMetadata:

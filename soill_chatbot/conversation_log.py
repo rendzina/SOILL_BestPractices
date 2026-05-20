@@ -11,7 +11,7 @@ from pymongo import ASCENDING, DESCENDING
 import config as cfg
 from soill_chatbot.chat_history import ChatTurn
 from soill_chatbot import store_mongo
-from soill_chatbot.user_identity import ClientMetadata
+from soill_chatbot.user_identity import ClientMetadata, coerce_client_metadata
 
 logger = logging.getLogger(__name__)
 _indexes_ensured = False
@@ -30,7 +30,7 @@ def _ensure_indexes() -> None:
 
 def fetch_recent_turns(thread_id: str, limit: Optional[int] = None) -> List[ChatTurn]:
     """Load the latest completed Q&A turns for a Chainlit thread (newest last)."""
-    if not cfg.LOG_CONVERSATIONS or not thread_id:
+    if not cfg.LOG_CONVERSATIONS or not thread_id or thread_id == 'anonymous':
         return []
     turn_limit = limit if limit is not None else cfg.CHAT_HISTORY_TURNS
     if turn_limit <= 0:
@@ -75,7 +75,7 @@ def log_interaction(
     if not cfg.LOG_CONVERSATIONS or not question.strip():
         return
 
-    meta = client or ClientMetadata.anonymous()
+    meta = coerce_client_metadata(client)
     document: dict[str, Any] = {
         'created_at': datetime.now(timezone.utc),
         'thread_id': meta.thread_id,
@@ -96,6 +96,19 @@ def log_interaction(
 
     try:
         _ensure_indexes()
-        store_mongo.conversations_col().insert_one(document)
+        result = store_mongo.conversations_col().insert_one(document)
+        logger.info(
+            'Logged conversation to %s.%s (_id=%s, thread_id=%s)',
+            cfg.MONGO_DB,
+            cfg.MONGODB_CONVERSATIONS_COLLECTION,
+            result.inserted_id,
+            meta.thread_id,
+        )
     except Exception as exc:
-        logger.warning('Failed to log conversation to MongoDB: %s', exc)
+        logger.error(
+            'Failed to log conversation to MongoDB (%s.%s): %s',
+            cfg.MONGO_DB,
+            cfg.MONGODB_CONVERSATIONS_COLLECTION,
+            exc,
+            exc_info=True,
+        )

@@ -214,6 +214,7 @@ Each chat has a **Chainlit `thread_id`**. While the tab/session is open, up to `
 | `CHAT_HISTORY_ENABLED` | `true` | Include recent turns in the model prompt |
 | `CHAT_HISTORY_TURNS` | `3` | Number of prior Q&A pairs to include (not unlimited memory) |
 | `CHAT_HISTORY_MAX_ANSWER_CHARS` | `1500` | Truncate long answers in history |
+| `CHAT_HISTORY_EXPAND_RETRIEVAL` | `true` | Prepend prior questions to FAISS search on follow-ups |
 | `LOG_CONVERSATIONS` | `true` | Store each turn in MongoDB |
 | `LOG_CLIENT_METADATA` | `true` | Log `client_ip` and `user_agent` (see privacy note below) |
 
@@ -234,7 +235,7 @@ Multi-turn works for the **current terminal session** only (no Mongo reload betw
 
 Check the Chainlit terminal for `Failed to log conversation to MongoDB` if rows do not appear in Atlas (permissions, network access, or wrong database name).
 
-Retrieval (FAISS) still uses **only the latest question** for embedding search; history is for dialogue context, not for finding new chunks.
+For **follow-up** questions (e.g. “which partners does that involve?”), FAISS search uses prior user questions plus the new message when `CHAT_HISTORY_EXPAND_RETRIEVAL=true`. Otherwise retrieval uses only the latest question; chat history is still sent to the model for dialogue context.
 
 **Privacy:** If you deploy for multiple users, document IP/User-Agent logging in your privacy notice. Set `LOG_CLIENT_METADATA=false` to store only hashed `visitor_fingerprint` and thread ids.
 
