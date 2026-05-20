@@ -7,6 +7,8 @@
 # Re-scraping the same seed can duplicate articles in MongoDB; comment out
 # completed seeds when adding new projects. Re-index with build_faiss_index.py.
 #
+# Uncomment selected URLs and then run 'python SOILL_scrape.py'
+
 # Mission Soil Living Labs
 #https://www.metabolic.nl/projects/gov4all,GOV4ALL
 #https://gov4all.eu,GOV4ALL
@@ -50,7 +52,8 @@
 #https://ogcr.eu
 #https://cafamore.eu
 #https://nitroscope.eu
- 
+
+
 # Projects WITHOUT an official website yet are:
 #https://cordis.europa.eu/project/id/101132349,AGROECOLOGY Partnership
 #https://cordis.europa.eu/project/id/101112869,ECHO
