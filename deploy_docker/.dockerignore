@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+.venv
+venv
+data/faiss
+mongodb_docker
+temporary
+*.md
+!deploy_docker/README.md

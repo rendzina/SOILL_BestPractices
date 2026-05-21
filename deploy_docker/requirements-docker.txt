@@ -1,0 +1,8 @@
+# Runtime dependencies for the Chainlit deploy image only (no scraper stack).
+pymongo>=4.6.0
+python-dotenv>=1.0.0
+dnspython>=2.4.0
+chainlit==2.11.0
+faiss-cpu>=1.13.0
+mistralai>=1.2.0,<3
+numpy>=1.26.0
