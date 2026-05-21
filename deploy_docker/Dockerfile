@@ -12,7 +12,11 @@ FROM python:3.11-slim-bookworm
 WORKDIR /app
 
 COPY deploy_docker/requirements-docker.txt requirements-docker.txt
-RUN pip install --no-cache-dir -r requirements-docker.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir \
+        pymongo python-dotenv dnspython faiss-cpu "numpy>=1.26.0" "mistralai>=1.2.0,<3" \
+    && pip install --no-cache-dir "traceloop-sdk==0.60.0" \
+    && pip install --no-cache-dir "chainlit==2.11.0"
 
 COPY config.py app.py build_faiss_index.py ./
 COPY soill_chatbot ./soill_chatbot
