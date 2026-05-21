@@ -48,6 +48,8 @@ MONGO_VOLUME_NAME = os.getenv('MONGO_VOLUME_NAME', 'local_mongo_data')
 
 # MongoDB — application
 MONGO_URI = os.getenv('MONGO_URI', f'mongodb://{MONGO_HOST}:{MONGO_PORT}/')
+# Optional path to CA bundle for Atlas TLS (default: certifi package)
+MONGO_TLS_CA_FILE = os.getenv('MONGO_TLS_CA_FILE', '').strip() or None
 MONGO_DB = os.getenv('MONGO_DB', 'SOILL_catalogue')
 MONGO_COLLECTION = os.getenv('MONGO_COLLECTION', 'webscrape')
 

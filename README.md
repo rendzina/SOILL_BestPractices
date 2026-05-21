@@ -292,6 +292,7 @@ For **follow-up** questions (e.g. “which partners does that involve?”), FAIS
 | Follow-up answers wrong project | FAISS searched only the vague follow-up | Set `CHAT_HISTORY_EXPAND_RETRIEVAL=true` in `.env` |
 | No rows in Atlas | Wrong DB, logging off, or insert error | Check `MONGO_DB`, `LOG_CONVERSATIONS`; terminal for `Failed to log conversation` or `Logged conversation to…` |
 | History lost after refresh | New Chainlit `thread_id` | Expected; only same thread reloads from Mongo when `LOG_CONVERSATIONS=true` |
+| `SSL handshake failed` / `TLSV1_ALERT_INTERNAL_ERROR` (local Mac) | Atlas TLS or IP whitelist | `pip install -r requirements.txt` (includes `certifi`); restart Chainlit; Atlas **Network Access** must include your **current** IP (not only Render); URL-encode special characters in the Atlas password; try Python **3.11** venv if 3.13 still fails |
 
 **Privacy:** If you deploy for multiple users, document IP/User-Agent logging in your privacy notice. Set `LOG_CLIENT_METADATA=false` to store only hashed `visitor_fingerprint` and thread ids.
 

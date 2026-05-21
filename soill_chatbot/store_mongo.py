@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
+import certifi
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -21,12 +22,21 @@ _client: Optional[MongoClient] = None
 _client_uri: Optional[str] = None
 
 
+def _client_kwargs(uri: str) -> dict:
+    """TLS options for Atlas (mongodb+srv) — avoids macOS/Python SSL handshake errors."""
+    kwargs: dict = {'serverSelectionTimeoutMS': 20000}
+    if uri.startswith('mongodb+srv://') or 'tls=true' in uri.lower():
+        ca_file = getattr(cfg, 'MONGO_TLS_CA_FILE', None) or certifi.where()
+        kwargs['tlsCAFile'] = ca_file
+    return kwargs
+
+
 def get_client() -> MongoClient:
     """Return a MongoClient; reconnect if MONGO_URI changed (e.g. after editing .env)."""
     global _client, _client_uri
     uri = cfg.MONGO_URI
     if _client is None or _client_uri != uri:
-        _client = MongoClient(uri, serverSelectionTimeoutMS=20000)
+        _client = MongoClient(uri, **_client_kwargs(uri))
         _client_uri = uri
     return _client
 

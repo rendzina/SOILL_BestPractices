@@ -7,6 +7,8 @@ pymongo>=4.6.0
 python-dotenv>=1.0.0
 # Required for mongodb+srv:// URIs (e.g. MongoDB Atlas)
 dnspython>=2.4.0
+# CA bundle for Atlas TLS (avoids SSL handshake errors on macOS / Python 3.13)
+certifi>=2024.0.0
 
 # SOILL_scrape.py — web crawling and HTML parsing
 requests>=2.31.0
