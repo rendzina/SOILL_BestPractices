@@ -8,6 +8,12 @@ from __future__ import annotations
 
 import sys
 import traceback
+from pathlib import Path
+
+# Script lives in deploy_docker/; app root is one level up (/app in Docker).
+_APP_ROOT = Path(__file__).resolve().parent.parent
+if str(_APP_ROOT) not in sys.path:
+    sys.path.insert(0, str(_APP_ROOT))
 
 import config as cfg
 
