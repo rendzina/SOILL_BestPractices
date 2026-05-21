@@ -1,15 +1,22 @@
-# Docker deploy (Render.com and local smoke test)
+# Docker deploy (`deploy_docker/`)
 
-Standalone container for the Chainlit UI (`app.py`). MongoDB and scraped content live **outside** the image (typically [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)); the container only needs network access and API keys.
+Short guide for the **production Chainlit image**. Full project workflow (scrape, index, local dev): [main README](../README.md).
 
-## Prerequisites
+## What the image contains
 
-1. Atlas (or other MongoDB) with articles in `webscrape` (from `SOILL_scrape.py`).
-2. Chunk embeddings in MongoDB — run once on your machine:
-   ```bash
-   python build_faiss_index.py
-   ```
-   On first container start, if chunks exist but `data/faiss/` is empty, the entrypoint rebuilds FAISS from MongoDB without re-embedding. If there are no chunks, it runs `build_faiss_index.py` (needs `MISTRAL_API_KEY` and can take several minutes).
+- `app.py`, `config.py`, `build_faiss_index.py`, `soill_chatbot/`, `.chainlit/`
+- Runtime deps from `requirements-docker.txt` (Chainlit, FAISS, Mistral, MongoDB client)
+- **Not** included: scraped data, FAISS files, or `.env` — those come from Atlas + host env vars
+
+## Before you deploy
+
+On your machine, against the same MongoDB you will use in production:
+
+```bash
+python build_faiss_index.py
+```
+
+Atlas should have articles in `webscrape` and embeddings in `chunks`.
 
 ## Local smoke test
 
@@ -19,38 +26,31 @@ From the **repository root**:
 docker compose -f deploy_docker/docker-compose.yml --env-file .env up --build
 ```
 
-Open http://localhost:8000
+→ http://localhost:8000
 
 ## Render.com
 
-1. Connect this GitHub repository.
-2. **Root Directory**: leave empty (repository root).
-3. **Environment**: Docker.
-4. **Dockerfile path**: `deploy_docker/Dockerfile`
-5. **Instance type**: at least 512 MB RAM (FAISS + Chainlit).
-6. **Environment variables** (from `.env.example` — do not commit `.env`):
+| Setting | Value |
+|---------|--------|
+| Root directory | *(empty — repo root)* |
+| Environment | Docker |
+| Dockerfile path | `deploy_docker/Dockerfile` |
+| RAM | ≥ 512 MB |
 
-   | Variable | Notes |
-   |----------|--------|
-   | `MONGO_URI` | `mongodb+srv://…` Atlas URI |
-   | `MONGO_DB` | e.g. `SOILL_catalogue` |
-   | `MISTRAL_API_KEY` | Required for chat; required on first start if chunks must be built |
-   | `MISTRAL_CHAT_MODEL` | e.g. `open-mistral-nemo` |
-   | Other chat/RAG vars | As in `.env.example` |
+**Environment variables** (minimum): `MONGO_URI`, `MONGO_DB`, `MISTRAL_API_KEY`, plus chat/RAG settings from [`.env.example`](../.env.example). Do not commit `.env`.
 
-   Render sets `PORT` automatically; the entrypoint binds Chainlit to `0.0.0.0` on that port.
+Optional: `REBUILD_FAISS_ON_START=1` forces a FAISS rebuild on every container start.
 
-7. Optional: `REBUILD_FAISS_ON_START=1` to refresh the on-disk index after every deploy (uses existing MongoDB embeddings when possible).
+Render sets `PORT`; the entrypoint runs `chainlit run app.py --headless --host 0.0.0.0`.
 
-8. Deploy → use the generated `https://….onrender.com` URL for colleagues.
+**Ephemeral disk:** `data/faiss/` is recreated on startup from MongoDB when missing. Keep chunk embeddings in Atlas so restarts stay quick.
 
-**Note:** Render’s filesystem is ephemeral. The FAISS files under `data/faiss/` are recreated on each new instance from MongoDB via the entrypoint; keep chunks in Atlas so restarts stay fast.
+## Files in this folder
 
-## Files
-
-| File | Role |
-|------|------|
-| `Dockerfile` | Python 3.11 image, installs deps, copies app code |
-| `docker-entrypoint.sh` | FAISS rebuild if needed, then `chainlit run app.py` |
-| `docker-compose.yml` | Local test with `../.env` |
-| `.dockerignore` | Keeps secrets and large local artefacts out of the build |
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Build image (context = repo root) |
+| `docker-entrypoint.sh` | FAISS rebuild if needed, then Chainlit |
+| `docker-compose.yml` | Local test (`../.env`) |
+| `requirements-docker.txt` | Slim runtime dependencies |
+| `.dockerignore` | Exclude secrets and local `data/faiss/` from build |

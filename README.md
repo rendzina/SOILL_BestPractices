@@ -6,7 +6,9 @@
 **Date:** 19/5/2026
 **Licence:** [CC BY 4.0](LICENSE)
 
-Toolkit for the [SOILL](https://www.soill2030.eu/) project (Support Structure for Soil Health Living Labs and Lighthouses). It crawls partner project websites, stores extracted articles in MongoDB, builds a local FAISS retrieval index, and answers questions via a Chainlit chatbot.
+Toolkit for the [SOILL](https://www.soill2030.eu/) project (Support Structure for Soil Health Living Labs and Lighthouses). It crawls partner project websites, stores extracted articles in MongoDB, builds a FAISS retrieval index, and answers questions via a Chainlit chatbot.
+
+**Production hosting:** the chatbot application is packaged as a **Docker image** (see [`deploy_docker/`](deploy_docker/README.md)) for deployment on platforms such as [Render.com](https://render.com). Scraping and index building stay on your machine (or CI); the container runs Chainlit against **MongoDB Atlas** (or another remote MongoDB) and the **Mistral API**.
 
 ## What it does
 
@@ -66,6 +68,7 @@ flowchart TB
 | `urls_to_scrape.txt` | Seed URLs and project names (CSV) |
 | `soill_chatbot/` | RAG package (chunking, embeddings, FAISS, Mistral) |
 | `mongodb_docker/` | Docker Compose for local MongoDB |
+| `deploy_docker/` | Docker image for the Chainlit chatbot (Render.com, etc.) — [README](deploy_docker/README.md) |
 | `public/` | Logos, favicon, Chainlit welcome CSS |
 | `.chainlit/` | Chainlit UI configuration |
 | `webscraping-important-considerations.md` | Ethics and crawling guidelines |
@@ -203,6 +206,45 @@ Type `quit`, `exit`, or `q` to exit. The terminal CLI also keeps multi-turn hist
 
 Restart Chainlit after rebuilding the index or changing `MONGO_URI`.
 
+## Deploy the chatbot with Docker (Render.com and similar)
+
+The **whole chatbot stack** needed at runtime (`app.py`, `soill_chatbot/`, Chainlit config, FAISS rebuild logic) is built into one image from [`deploy_docker/Dockerfile`](deploy_docker/Dockerfile). That image is intended for cloud hosts that run Docker (e.g. **Render.com**), so colleagues can use a public HTTPS URL without installing Python locally.
+
+**What stays outside the container**
+
+| Task | Where |
+|------|--------|
+| Scrape partner sites | Your machine: `SOILL_scrape.py` |
+| Create DB / reset articles | Your machine: `Create_SOILL_Best_Practices_database.py` |
+| Chunk + embed catalogue | Your machine: `build_faiss_index.py` (against Atlas) |
+| MongoDB data | [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (or other cloud MongoDB) |
+| Secrets | Host environment variables (`MONGO_URI`, `MISTRAL_API_KEY`, …) — not baked into the image |
+
+**Typical workflow**
+
+1. Develop and ingest locally (sections above) with `MONGO_URI` pointing at Atlas.
+2. Run `python build_faiss_index.py` once so Atlas has **chunks with embeddings**.
+3. Build and test the image locally, then connect the same repo on Render.
+
+**Local smoke test** (from the repository root):
+
+```bash
+docker compose -f deploy_docker/docker-compose.yml --env-file .env up --build
+```
+
+Open http://localhost:8000
+
+**Render.com (summary)**
+
+- **Root directory:** repository root (empty).
+- **Dockerfile path:** `deploy_docker/Dockerfile`
+- Set environment variables from [`.env.example`](.env.example) in the Render dashboard (Render injects `PORT` automatically).
+- On each new instance, the entrypoint rebuilds `data/faiss/` from MongoDB when the index file is missing (fast if chunks already exist).
+
+Step-by-step Render settings, optional `REBUILD_FAISS_ON_START`, and file descriptions: **[`deploy_docker/README.md`](deploy_docker/README.md)**.
+
+**Privacy:** If you share the public URL, document IP/User-Agent logging (see [Multi-turn chat](#multi-turn-chat-and-conversation-logging)); set `LOG_CLIENT_METADATA=false` if you prefer hashes only.
+
 ## Multi-turn chat and conversation logging
 
 The assistant can use the **last few question–answer pairs** for follow-ups (e.g. “tell me more about that”). This is normal for RAG systems: limited history controls cost, keeps retrieval focused, and reduces privacy risk.
@@ -329,6 +371,7 @@ Scraped third-party website content is **not** covered by this licence; respect 
 ## References
 
 - [SOILL project](https://www.soill2030.eu/)
+- [Render — Deploy a Docker image](https://render.com/docs/docker)
 - [MongoDB with Docker](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-community-with-docker/)
 - [Mission Soil catalogue (Zenodo)](https://zenodo.org/records/17549268)
 - [Creative Commons BY 4.0](https://creativecommons.org/licenses/by/4.0/)
