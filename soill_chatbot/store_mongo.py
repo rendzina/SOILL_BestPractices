@@ -26,7 +26,7 @@ def get_client() -> MongoClient:
     global _client, _client_uri
     uri = cfg.MONGO_URI
     if _client is None or _client_uri != uri:
-        _client = MongoClient(uri, serverSelectionTimeoutMS=8000)
+        _client = MongoClient(uri, serverSelectionTimeoutMS=20000)
         _client_uri = uri
     return _client
 

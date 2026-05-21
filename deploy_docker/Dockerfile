@@ -18,9 +18,13 @@ RUN pip install --upgrade pip \
     && pip install --no-cache-dir "traceloop-sdk==0.60.0" \
     && pip install --no-cache-dir "chainlit==2.11.0"
 
-COPY config.py app.py build_faiss_index.py ./
+COPY config.py app.py build_faiss_index.py chainlit.md chainlit_en-GB.md ./
 COPY soill_chatbot ./soill_chatbot
 COPY .chainlit ./.chainlit
+COPY public ./public
+COPY deploy_docker/prewarm_faiss.py deploy_docker/prewarm_faiss.py
+
+RUN test -f public/logo_light.png && test -f public/logo_dark.png && test -f public/favicon.png
 
 RUN mkdir -p data/faiss
 

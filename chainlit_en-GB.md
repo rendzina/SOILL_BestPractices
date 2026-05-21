@@ -1,6 +1,7 @@
 # Welcome to the SOILL T4.4 Best Practices Catalogue Research Tool Chatbot! 🇪🇺
 
-![SOILL wordmark](/public/logo_dark.png#light)
+![SOILL wordmark](/public/logo_light.png#light)
+![SOILL wordmark](/public/logo_dark.png#dark)
 
 This is the Task 4.4 Best Practices Catalogue chatbot for the SOILL project, providing structured support for EU Mission Soil Living Labs from start to scale. The chatbot is designed as a research tool to allow the user to efficiently query article text from indexed Living Lab web portals.
 
